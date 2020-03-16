@@ -214,3 +214,119 @@ public class Person {
 ```
 <context:annotation-config> 只解析属性的注解
 ```
+
+
+
+# AOP
+面向切面编程 aspect oriented programming
+### AOP的相关术语
+* Joinpoint 连接点指被拦截到的点，在spring中指的是方法，因为spring中只支持方法类型的连接点，可能会被拦截的点，或者叫能被拦截的点。
+* Pointcut 定义哪些方法会被拦截，真正被拦截的点。
+* Advice 拦截后要做的事情，
+* Introduction 引介是一种特殊的通知在不修改类代码的前提下，引介可以在运行期为类动态的添加一些方法或者Field。
+* Target 代理的目标对象，被增强的对象
+* Weaving 将Advice应用到Target的过程
+* Proxy 被应用增强后产生的代理对象
+* Aspect 切入点和同志的组合，AspectJ采用编译器织入和类装载区织入的方式， Spring采用动态代理方式织入
+
+
+
+JDK动态代理
+
+_注意UserDaoImpl实现了UserDao的4个接口，UserDao是Interface类_
+
+```java
+public class MyJDKProxy implements InvocationHandler {
+    private UserDao userDao;
+
+    public MyJDKProxy(UserDao userDao) {
+        this.userDao = userDao;
+    }
+
+    public Object createProxy() {
+        Object proxy = Proxy.newProxyInstance(userDao.getClass().getClassLoader(), userDao.getClass().getInterfaces(), this);
+        return proxy;
+    }
+
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        if ("save".equals(method.getName())) {
+            System.out.println("权限校验");
+            return method.invoke(userDao, args);
+        }
+        return method.invoke(userDao, args);
+    }
+}
+```
+
+
+
+CGLIB对于没有实现接口的类，实现代理的方式
+
+```java
+public class MyCGLIBProxy implements MethodInterceptor{
+  private UserDao userDao;
+  public MyCGLIBProxy(UserDao userDao){
+    this.userDao = userDao;
+  }
+  public Object createProxy(){
+    // 1.创建核心类
+    Enhancer enhancer = new Enhancer();
+    // 2.设置父类
+    enhancer.setSuperclass(userDao.getClass());
+    // 3.设置回调
+    enhancer.setCallback();
+    // 4.生成代理
+    Object proxy = enhancer.create();
+    return proxy;
+  }
+  public Object intercept(Object proxy, Method method, Object[] args, MethodProxy methodProxy) throw Throwable {
+    if ("save".equals(method.getName())){
+      System.out.println("权限校验");
+      return methodProxy.invokeSuper(proxy.args);
+    }
+    return methodProxy.invokeSuper(proxy.args);
+  } 
+}
+```
+
+
+
+- Spring在运行期，生成动态代理对象，不需要特殊的编译器
+
+- Spring AOP的底层原理就是通过JDK动态代理或CGLIB动态代理技术，为目标Bean执行横向织入
+
+  ​    1.若目标对象实现了若干接口，Spring使用JDK的java.lang.reflect.Proxy类代理
+  
+  ​    2.若目标没有实现任何接口，Spring使用CGLIB库生产目标对象的子类。
+  
+- 程序中应该优先对接口创建代理，便于程序解耦维护
+
+- 标记为final的方法，不能被代理，因为无法进行覆盖
+
+    - JDK动态生成代理是针对接口生成子类，接口中方法不能使用final修饰
+    - CGLIB是针对目标类生成子类，因此类或方法不能使用final
+    
+- Spring支支持方法连接点，不支持属性连接点
+
+
+
+### AOP增强类型
+
+- AOP联盟为通知Advice定义了org.aopalliance.aop.Interface.Advice
+
+- Spring按照通知Advice在目标类的连接点位置，可分为5类
+
+  - 前置通知org.springframework.aop.MethodBeforeAdvice
+    
+      - 在目标方法执行前实施增强
+  - 后置通知org.springframework.aop.AfterReturningAdvice
+    
+      - 在目标方法执行后实施增强
+  - 环绕通知 org.aopalliance.intercept.MethodInterceptor
+  
+      - 在目标方法执行前后实施增强
+  - 异常抛出通知 org.springframework.aop.ThrowsAdvice
+      - 在方法抛出异常后实施增强
+- 引介通知 org.springframework.aop.IntroductionInterceptor
+      - 在目标类中添加一些新的方法和属性（Spring不支持属性代理）
