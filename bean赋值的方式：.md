@@ -330,3 +330,369 @@ public class MyCGLIBProxy implements MethodInterceptor{
       - 在方法抛出异常后实施增强
 - 引介通知 org.springframework.aop.IntroductionInterceptor
       - 在目标类中添加一些新的方法和属性（Spring不支持属性代理）
+
+### 准备工作
+
+- 引入AOP的两个包
+  - aopalliance
+  - spring-aop
+
+_com.example.BeforeAdvice.java_
+
+```java
+public class BeforeAdvice implements MethodBeforeAdvice {
+    public void before(Method method, Object[] args, Object target) throws Throwable {
+		// 要放在前置的增强代码        
+    }
+}
+```
+
+
+
+_applicationContext.xml_
+
+```xml
+<bean id="person" class="com.example.Person" />
+<!--前置通知类型-->
+<bean id="beforeAdvice" class="com.example.BeforeAdvice" />
+<!--配置目标类-->
+<bean id="personProxy" class="org.springframework.aop.framework.ProxyFactoryBean">
+	<!--配置目标类-->
+    <property name="target" ref="person" />
+    <!--实现的接口，Person实现的接口累-->
+    <property name="proxyInterfaces" value="com.example.Interface" />
+    <!--采用拦截的名称-->
+    <property name="interceptorNames" value="beforeAdvice" />
+	<!--采用CGLIB-->
+    <property name="optimize" value="true" />
+</bean>
+```
+
+
+
+
+- proxyTargetClass:是否对类代理而不是接口，设置为ture时，使用CGLib代理
+- interceptorNames:需要织入目标的Advice
+- singleton:返回代理是否为单实例，默认为单例
+- optimize:当设置为ture时，强制使用CGLib代理
+
+环绕通知
+
+__com.example.AroundAdvice.java_
+
+```java
+public class BeforeAdvice implements MethodInterceptor {
+    public Object before(MethodInvocation invocation) throws Throwable {
+		// 环绕前增强
+        Object obj = invocation.proceed();
+        // 环绕后增强
+        return obj;
+    }
+}
+```
+
+_applicationContext.xml_
+
+```xml
+<bean id="person" class="com.example.Person" />
+<!--前置通知类型-->
+<bean id="aroundAdvice" class="com.example.AroundAdvice" />
+<!--一般的切面时使用通知作为且米娜，因为要对目标类的某方法进行增强，需要配置带有切入点的切面-->
+<bean id="myAdvisor" class="org.springframework.aop.support.RegexMethodPointcutAdvisor">
+    <!--pattern中配置正则表达式-->
+	<property name="pattern" value=".*" /> 
+    	/
+    <property name="patterns" value="a,b" />
+    <property name="advice" ref="aroundAdvice" />
+</bean>
+<!--配置目标类-->
+<bean id="personProxy" class="org.springframework.aop.framework.ProxyFactoryBean">
+	<!--配置目标类-->
+    <property name="target" ref="person" />
+    <!--实现的接口，Person实现的接口累-->
+    <property name="proxyTargetClass" value="true" />
+    <!--采用拦截的名称-->
+    <property name="interceptorNames" value="myAdvisor" />
+</bean>
+```
+
+
+
+### 自动代理创建
+
+前面的案例中，每个代理都是通过ProxyFacaoryBean织入切面代理，在实际开发中，非常多的Bean每个都配置ProxyFactoryBean开发维护量巨大
+
+解决办法：自动创建代理
+- BeanNameAutoProxyCreator 根据Bean名称创建代理
+- DefaultAdvisorAutoProxyCreator 根据Advisor本身包含信息创建代理
+- AnnotationAwareAspectJAutoProxyCreator 基于Bean中的AspectJ注解进行自动代理
+
+_applicationContext.xml_
+```xml
+<!--配置目标类-->
+<bean id="personDao" class="com.example.personDao" />
+<bean id="customerDao" class="com.example.customerDao" />
+
+<!--配置增强-->
+<bean id="beforeAdvice" class="com.example.BeforeAdvice" />
+<bean id="aroundAdvice" class="com.example.AroundAdvice" />
+<!--自动代理配置-->
+<bean class="org.springframework.aop.framework.autoproxy.BeanNameAutoProxyCreator">
+	<property name="beanNames" value="*Dao" />
+    <property name="interceptorNames" value="beforeAdvice" />
+    	/
+    <property name="interceptorNames" value="aroundAdvice" />
+</bean>
+```
+
+<u>缺点是这种自动代理会把类里面的所有方法都代理</u>
+
+_applicationContext.xml_
+```xml
+<!--配置目标类-->
+<bean id="personDao" class="com.example.PersonDao" />
+<bean id="customerDao" class="com.example.customerDao" />
+<!--配置增强-->
+<bean id="beforeAdvice" class="com.example.BeforeAdvice" />
+<bean id="aroundAdvice" class="com.example.AroundAdvice" />
+<!--配置切面-->
+<bean id="myAdvisor" class="org.springframework.aop.support.RegexMethodPointcutAdvisor">
+    <!--pattern中配置正则表达式-->
+	<property name="pattern" value="com\.example\.PersonDao\.methodName" /> 
+    	/
+    <property name="patterns" value="a,b" />
+    <property name="advice" ref="aroundAdvice" />
+</bean>
+
+<bean class="org.springframework.aop.framework.autoProxy.DefaultAdvisorAutoProxyCreator">	
+</bean> 
+```
+
+## AspectJ
+
+- AspectJ是一个基于Java语言的AOP框架
+- Spring2.0以后新增了对AspectJ切点表达式支持
+- @AspectJ 是AspectJ1.5新增功能，通过JDK1.5注解技术，允许直接在Bean类中定义切面
+- 新版本Spring框架，建议使用AspectJ方式来开发AOP
+- 使用AspectJ需要导入Spring AOP和AspectJ相关Jar
+  - spring-aop
+  - com.springsource.org.aopalliance
+  - spring-aspects
+  - com.springsource.org.aspectj.weave
+
+引包
+
+_applicationContext.xml_
+
+```xml
+<dependency>
+        <groupId>aopalliance</groupId>
+        <artifactId>aopalliance</artifactId>
+        <version>1.0</version>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-aop</artifactId>
+        <version>4.2.4.RELEASE</version>
+    </dependency>
+    <dependency>
+        <groupId>org.aspectj</groupId>
+        <artifactId>aspectjweaver</artifactId>
+        <version>1.8.9</version>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-aspects</artifactId>
+        <version>4.2.4.RELEASE</version>
+    </dependency>
+```
+
+
+
+### AspectJ注解方式开发AOP
+
+_applicationContext.xml_
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:aop="http://www.springframework.org/schema/aop" xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <!--XML的配置方式完成AOP的开发===============-->
+    <!--配置目标类=================-->
+    <bean id="customerDao" class="com.imooc.aspectJ.demo2.CustomerDaoImpl"/>
+
+    <!--配置切面类-->
+    <bean id="myAspectXml" class="com.imooc.aspectJ.demo2.MyAspectXml"/>
+
+    <!--aop的相关配置=================-->
+    <aop:config>
+        <!--配置切入点-->
+        <aop:pointcut id="pointcut1" expression="execution(* com.imooc.aspectJ.demo2.CustomerDao.save(..))"/>
+        <aop:pointcut id="pointcut2" expression="execution(* com.imooc.aspectJ.demo2.CustomerDao.update(..))"/>
+        <aop:pointcut id="pointcut3" expression="execution(* com.imooc.aspectJ.demo2.CustomerDao.delete(..))"/>
+        <aop:pointcut id="pointcut4" expression="execution(* com.imooc.aspectJ.demo2.CustomerDao.findOne(..))"/>
+        <aop:pointcut id="pointcut5" expression="execution(* com.imooc.aspectJ.demo2.CustomerDao.findAll(..))"/>
+        <!--配置AOP的切面-->
+        <aop:aspect ref="myAspectXml">
+            <!--配置前置通知-->
+            <aop:before method="before" pointcut-ref="pointcut1"/>
+            <!--配置后置通知-->
+            <aop:after-returning method="afterReturing" pointcut-ref="pointcut2" returning="result"/>
+            <!--配置环绕通知-->
+            <aop:around method="around" pointcut-ref="pointcut3"/>
+            <!--配置异常抛出通知-->
+            <aop:after-throwing method="afterThrowing" pointcut-ref="pointcut4" throwing="e"/>
+            <!--配置最终通知-->
+            <aop:after method="after" pointcut-ref="pointcut5"/>
+        </aop:aspect>
+
+    </aop:config>
+</beans>
+```
+
+- 通过execution函数，可以定义切点的方法切入
+
+- 语法：
+
+  - exection(<访问修饰符>?<返回类型><方法名>(<参数>)<异常>)
+
+- 例如
+
+  - 匹配所有类public的方法 execution(public * *(..))
+
+  - 匹配指定包下所有类的方法 execution(* com.imooc.dao.*(..)) 不包含子包
+
+  - execution(* com.imooc.dao..*(..)) ..*表示包、子孙包下所有类
+
+  - 匹配指定类所有方法 execution(* com.imooc.service.UserService.*(..))
+
+  - 匹配实现特定接口所有类方法
+
+    execution(* com.imooc.dao.GenericDAO+.*(..))
+
+  - 匹配所有save开头的方法 execution(* save*(..))
+
+
+
+### Aspect的XML方式开发AOP
+
+_applicationContext.xml_
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:aop="http://www.springframework.org/schema/aop" xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <!--开启AspectJ的注解开发，自动代理=====================-->
+    <aop:aspectj-autoproxy/>
+
+    <!--目标类===================-->
+    <bean id="productDao" class="com.imooc.aspectJ.demo1.ProductDao"/>
+
+    <!--定义切面-->
+    <bean class="com.imooc.aspectJ.demo1.MyAspectAnno"/>
+</beans>
+```
+
+_com.imooc.aspectJ.demo1.ProductDao.java_
+
+```java
+package com.imooc.aspectJ.demo1;
+
+public class ProductDao {
+
+    public void save(){
+        System.out.println("保存商品...");
+    }
+
+    public String update(){
+        System.out.println("修改商品...");
+        return "hello";
+    }
+
+    public void delete(){
+        System.out.println("删除商品...");
+    }
+
+    public void findOne(){
+        System.out.println("查询一个商品...");
+        //int i = 1/0;
+    }
+
+    public void findAll(){
+        System.out.println("查询所有商品...");
+//        int j = 1/0;
+    }
+
+}
+```
+
+
+
+com.imooc.aspectJ.demo1.MyAspectAnno.java_
+
+```java
+package com.imooc.aspectJ.demo1;
+
+import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.*;
+
+/**
+ * 切面类
+ */
+@Aspect
+public class MyAspectAnno {
+    
+    @Before(value="myPointcut1()")
+    public void before(JoinPoint joinPoint){
+        System.out.println("前置通知=================="+joinPoint);
+    }
+
+    @AfterReturning(value="myPointcut2()",returning = "result")
+    public void afterReturing(Object result){
+        System.out.println("后置通知=================="+result);
+    }
+
+    @Around(value="myPointcut3()")
+    public Object around(ProceedingJoinPoint joinPoint) throws Throwable {
+        System.out.println("环绕前通知================");
+        Object obj = joinPoint.proceed(); // 执行目标方法
+        System.out.println("环绕后通知================");
+        return obj;
+    }
+
+    @AfterThrowing(value="myPointcut4()",throwing = "e")
+    public void afterThrowing(Throwable e){
+        System.out.println("异常抛出通知=============="+e.getMessage());
+    }
+
+    @After(value="myPointcut5()")
+    public void after(){
+        System.out.println("最终通知==================");
+    }
+
+    @Pointcut(value="execution(* com.imooc.aspectJ.demo1.ProductDao.save(..))")
+    private void myPointcut1(){}
+
+    @Pointcut(value="execution(* com.imooc.aspectJ.demo1.ProductDao.update(..))")
+    private void myPointcut2(){}
+
+    @Pointcut(value="execution(* com.imooc.aspectJ.demo1.ProductDao.delete(..))")
+    private void myPointcut3(){}
+
+    @Pointcut(value="execution(* com.imooc.aspectJ.demo1.ProductDao.findOne(..))")
+    private void myPointcut4(){}
+
+    @Pointcut(value="execution(* com.imooc.aspectJ.demo1.ProductDao.findAll(..))")
+    private void myPointcut5(){}
+}
+```
+
