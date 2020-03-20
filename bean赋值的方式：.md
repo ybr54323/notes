@@ -701,6 +701,23 @@ public class MyAspectAnno {
 
 
 ## JDBC Template 
+
+_spring.xml_
+
+```xml
+<bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+        <property name="url" value="jdbc:mysql://localhost:3306/selection_course?useUnicode=true&amp;characterEncoding=utf-8"/>
+        <property name="username" value="root"/>
+        <property name="password" value="root"/>
+</bean>
+<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+    <property name="dataSource" ref="dataSource"/>
+</bean>
+```
+
+
+
 spring 基于jdbc封装而成的JDBC Template，简化数据库操作
 
 
@@ -787,3 +804,6 @@ spring 基于jdbc封装而成的JDBC Template，简化数据库操作
     ```
 
     
+
+JDBC Template
+
