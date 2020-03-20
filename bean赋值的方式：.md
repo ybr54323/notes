@@ -696,3 +696,94 @@ public class MyAspectAnno {
 }
 ```
 
+
+
+
+
+## JDBC Template 
+spring 基于jdbc封装而成的JDBC Template，简化数据库操作
+
+
+
+- execute方法，多用于ddl操作
+- update与batchUpdate方法
+- query与queryXXX方法
+- call方法
+
+
+
+- update
+
+  - 对数据进行增删改操作
+
+    ```java
+    int update(String sql, Object[] args);
+    int update(String sql, Object... args);
+    ```
+
+- batchUpdate方法
+
+  - 批量增删改操作
+
+    ```java
+    int[] batchUpdate(String[] sql);
+    int[] batchUpdate(String sql, List<Object[]> args);
+    ```
+
+- 查询简单数据项
+
+  - 获取一个
+
+    ```java
+    T queryForObject(String sql, Class<T> type);
+    T queryForObject(String sql, Object[] args, Class<T> type);
+    T queryForObject(String sql, CLass<T> type, Object... arg);
+    ```
+
+  - 获取多个
+
+    ```java
+    List<T> queryForList(String sql, Class<T> type);
+    List<T> queryForList(String sql, Object[] args, Class<T> type)
+    List<T> queryForList(String sql, Class<T> type, Object... args)
+    ```
+
+- 查询复杂对象（封装为Map）
+
+  - 获取一个
+
+    ```java
+    Map queryForMap(String sql);
+    Map queryForMap(String sql, Object[] args);
+    Map queryForMap(String sql, Object... arg);
+    ```
+
+  - 获取多个
+
+    ```java
+    List<Map<String,Object>> queryForList(String sql);
+    List<Map<String,Object>> queryForList(String sql, Object[] args);
+    List<Map<String,Object>> queryForList(String sql, Object...arg);
+    ```
+
+- 查询复杂对象（封装为实体对象）
+
+  - RowMapper接口
+
+  - 获取一个
+
+    ```java
+    T queryForObject(String sql, RowMapper<T> mapper);
+    T queryForObject(String sql, Object[] args,RowMapper<T> mapper);
+    T queryForObject(String sql, RowMapper<T> mapper,Object... arg);
+    ```
+
+  - 获取多个
+
+    ```java
+    List<T> query(String sql, RowMapper<T> mapper);
+    List<T> query(String sql, Object[] args, RowMapper<T> mapper);
+    List<T> query(String sql, RowMapper<T> mapper, Object... arg);
+    ```
+
+    
