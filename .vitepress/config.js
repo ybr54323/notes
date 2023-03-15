@@ -2,7 +2,7 @@ import { defineConfig } from 'vitepress'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  outDir: "../docs",
+  outDir: "./docs",
   base: '/notes/',
   title: "YBR notes",
   description: "record life and word.",
