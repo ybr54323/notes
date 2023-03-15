@@ -30,7 +30,7 @@ export default defineConfig({
                 text: "march",
                 items: [
                   {
-                    text: "第二周",link: "/docs/work/2023/march/second"
+                    text: "第二周",link: "/src/work/2023/march/second"
                   }
                 ]
               }
