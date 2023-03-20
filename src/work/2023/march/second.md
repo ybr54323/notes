@@ -18,6 +18,7 @@ this.$message.error({
 .ant-message-notice-content {
   &:has(#uniqueId) {
     // 样式代码
+    border: 1px dashed red;
   }
 }
 ```
@@ -27,11 +28,18 @@ this.$message.error({
 
 live demo
 ::: raw
-
-<iframe src="https://codesandbox.io/embed/vue-antd-template-forked-gu3l3u?fontsize=14&hidenavigation=1&theme=dark"
+<iframe src="https://codesandbox.io/embed/vue-antd-template-forked-gu3l3u?fontsize=14&hidenavigation=1&initialpath=%2F%23%2FmessageDemo&theme=dark"
      style="width:100%; height:500px; border:0; border-radius: 4px; overflow:hidden;"
      title="Vue Antd Template (forked)"
      allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
      sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
    ></iframe>
 :::
+
+
+# Saturday
+
+- 关于怎么设置codesandbox的demo打开时的路由?
+
+- 关于 vue test util
+
