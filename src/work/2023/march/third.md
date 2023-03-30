@@ -52,7 +52,83 @@ it("验证removeSlot有效", async () => {
 });
 ```
 
+### 关于微前端micro-zoe/micro-app与luckysheet集成的问题
 
+存在定位不准确的问题，即右键菜单contextmenu弹出的位置，偏离了右键点击的位置，双击单元格以输入，输入框出现的位置也出错。
+经调试后得知：因为luckysheet始化的逻辑是将所生成的表格dom，插入到documentElement中，是默认将整个模块当作全屏的应用，不存在内边距，顶格占满整个documentElement的，而由于微前端场景下，子应用dom不是对齐（占满）documentElement的，会存在内边距。微前端场景下，微前端的节点占位是如下橙色框中的：
+[图片](../../../public/0dc9eec8-d7d9-4c6e-99de-387793644ec7.png)
+所以就导致了库的定位出现了问题
+
+解决方案：
+使用iframe，给luckysheet提供一个documentElement，即在iframe中初始化这个库
+vue代码如下：
+```vue
+<template>
+  <iframe id="window-for-luckysheet" class="iframe" frameborder="0"> </iframe>
+</template>
+
+<script>
+export default {
+  name: "LuckySheet",
+  mounted() {
+    const tempWindow = document.getElementById("window-for-luckysheet").contentWindow;
+
+    const links = [
+      "https://cdn.jsdelivr.net/npm/luckysheet/dist/plugins/plugins.css",
+      "https://cdn.jsdelivr.net/npm/luckysheet/dist/css/luckysheet.css",
+
+      "https://cdn.jsdelivr.net/npm/luckysheet/dist/assets/iconfont/iconfont.css",
+    ];
+    const scripts = [
+      "https://cdn.jsdelivr.net/npm/luckysheet/dist/plugins/js/plugin.js",
+      "https://cdn.jsdelivr.net/npm/luckysheet/dist/luckysheet.umd.js",
+    ];
+
+    links.forEach((link) => {
+      const elm = tempWindow.document.createElement("link");
+      elm.href = link;
+      elm.rel = "stylesheet";
+      tempWindow.document.documentElement.appendChild(elm);
+    });
+    scripts.forEach((script) => {
+      const elm = tempWindow.document.createElement("script");
+      elm.src = script;
+      tempWindow.document.documentElement.appendChild(elm);
+    });
+    const elm = tempWindow.document.createElement("div");
+    elm.innerHTML = `
+     <div
+      id="luckysheet"
+      style="
+        margin: 0px;
+        padding: 0px;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        left: 0px;
+        top: 0px;
+      "
+    ></div>
+    `;
+    tempWindow.document.documentElement.appendChild(elm);
+
+    tempWindow.onload = () => {
+      const options = {
+        container: "luckysheet",
+      };
+      tempWindow.luckysheet.create(options);
+    };
+  },
+};
+</script>
+
+<style lang="less" scoped>
+.iframe {
+  width: calc(~"100%");
+  height: calc(~"100%");
+}
+</style>
+```
 
 
 
