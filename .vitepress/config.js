@@ -38,6 +38,10 @@ export default defineConfig({
                     text: "第三周",
                     link: "/src/work/2023/march/third",
                   },
+                  {
+                    text: "关于使用antv/x6绘制er图应用的记录",
+                    link: "/src/work/2023/match/er.graph.antv.md"
+                  }
                 ],
               },
             ],
